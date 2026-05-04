@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
+import Cart from './pages/Cart';
+import Orders from './pages/Orders';
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -22,8 +24,8 @@ export default function App() {
         <Route path="/categories" element={<PlaceholderPage title="全部分类" />} />
         <Route path="/product/:id" element={<PlaceholderPage title="商品详情" />} />
         <Route path="/traceability" element={<PlaceholderPage title="溯源查询" />} />
-        <Route path="/cart" element={<PlaceholderPage title="购物车" />} />
-        <Route path="/orders" element={<PlaceholderPage title="订单中心" />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/orders" element={<Orders />} />
         <Route path="/profile" element={<PlaceholderPage title="个人中心" />} />
         <Route path="/member" element={<PlaceholderPage title="会员权益" />} />
         <Route path="/about" element={<PlaceholderPage title="品牌承诺" />} />
