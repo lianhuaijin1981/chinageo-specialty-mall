@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
+import ProductDetail from './pages/ProductDetail';
+import Traceability from './pages/Traceability';
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -20,8 +22,8 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/region" element={<PlaceholderPage title="地域甄选" />} />
         <Route path="/categories" element={<PlaceholderPage title="全部分类" />} />
-        <Route path="/product/:id" element={<PlaceholderPage title="商品详情" />} />
-        <Route path="/traceability" element={<PlaceholderPage title="溯源查询" />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/traceability" element={<Traceability />} />
         <Route path="/cart" element={<PlaceholderPage title="购物车" />} />
         <Route path="/orders" element={<PlaceholderPage title="订单中心" />} />
         <Route path="/profile" element={<PlaceholderPage title="个人中心" />} />
