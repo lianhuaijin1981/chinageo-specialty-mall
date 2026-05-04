@@ -4,7 +4,19 @@ module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        serif: ['"Noto Serif SC"', 'serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
       colors: {
+        'qing-green': '#2E7D5E',
+        'ink-black': '#000000',
+        'zhu-red': '#D43C33',
+        'warm-white': '#F5F2EB',
+        'tea-brown': '#C8B6A6',
+        'pure-white': '#FFFFFF',
+        'light-gray': '#F8F8F8',
+        'dark-gray': '#333333',
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
