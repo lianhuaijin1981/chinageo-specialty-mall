@@ -290,3 +290,35 @@ export const pointsOrders = pgTable("points_orders", {
   userIdx: index("points_orders_user_idx").on(table.userId),
   statusIdx: index("points_orders_status_idx").on(table.status),
 }));
+
+// ------- 客服聊天会话表 -------
+export const chatSessions = pgTable("chat_sessions", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  adminId: integer("admin_id").references(() => users.id),
+  status: varchar("status", { length: 20 }).default("open").notNull(), // "open", "closed"
+  lastMessageAt: timestamp("last_message_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  userIdx: index("chat_sessions_user_idx").on(table.userId),
+  statusIdx: index("chat_sessions_status_idx").on(table.status),
+}));
+
+// ------- 客服聊天消息表 -------
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  sessionId: integer("session_id").references(() => chatSessions.id, { onDelete: "cascade" }).notNull(),
+  senderId: integer("sender_id").references(() => users.id).notNull(),
+  senderType: varchar("sender_type", { length: 20 }).notNull(), // "user", "admin"
+  message: text("message").notNull(),
+  messageType: varchar("message_type", { length: 20 }).default("text").notNull(), // "text", "image", "system"
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  sessionIdx: index("chat_messages_session_idx").on(table.sessionId),
+  senderIdx: index("chat_messages_sender_idx").on(table.senderId),
+  createdAtIdx: index("chat_messages_created_at_idx").on(table.createdAt),
+}));

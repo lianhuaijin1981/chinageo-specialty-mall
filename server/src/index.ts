@@ -79,6 +79,10 @@ app.route("/api/points", pointsRoutes);
 import { default as memberRoutes } from "./routes/member.routes";
 app.route("/api/member", memberRoutes);
 
+// 客服路由
+import { default as chatRoutes } from "./routes/chat.routes";
+app.route("/api/chat", chatRoutes);
+
 // 404 处理
 app.notFound((c) => {
   return c.json({ error: "Not Found", path: c.req.path }, 404);
