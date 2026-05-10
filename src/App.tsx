@@ -11,6 +11,8 @@ import Profile from './pages/Profile';
 import Member from './pages/Member';
 import About from './pages/About';
 import SearchPage from './pages/SearchPage';
+import CouponCenter from './pages/CouponCenter';
+import MyCoupons from './pages/MyCoupons';
 
 export default function App() {
   return (
@@ -27,6 +29,8 @@ export default function App() {
         <Route path="/member" element={<Member />} />
         <Route path="/about" element={<About />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/coupons" element={<CouponCenter />} />
+        <Route path="/coupons/my" element={<MyCoupons />} />
       </Routes>
     </Layout>
   );

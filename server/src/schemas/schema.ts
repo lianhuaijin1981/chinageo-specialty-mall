@@ -177,3 +177,46 @@ export const payments = pgTable("payments", {
   paidAt: timestamp("paid_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
+
+// ------- 优惠券表 -------
+export const couponTypeEnum = pgEnum("coupon_type", ["fixed", "percentage", "shipping"]);
+export const couponStatusEnum = pgEnum("coupon_status", ["active", "inactive", "expired"]);
+export const userCouponStatusEnum = pgEnum("user_coupon_status", ["unused", "used", "expired"]);
+
+export const coupons = pgTable("coupons", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  type: couponTypeEnum("type").notNull(),
+  discountValue: decimal("discount_value", { precision: 10, scale: 2 }).notNull(), // 折扣值（固定金额或折扣百分比）
+  minAmount: decimal("min_amount", { precision: 10, scale: 2 }).default("0"), // 最低消费金额
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  totalCount: integer("total_count").default(0), // 总发放数量，0表示不限
+  usedCount: integer("used_count").default(0).notNull(),
+  perUserLimit: integer("per_user_limit").default(1).notNull(), // 每人限领数量
+  status: couponStatusEnum("status").default("active").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  statusIdx: index("coupons_status_idx").on(table.status),
+  timeIdx: index("coupons_time_idx").on(table.startTime, table.endTime),
+}));
+
+// ------- 用户优惠券表 -------
+export const userCoupons = pgTable("user_coupons", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  couponId: integer("coupon_id").references(() => coupons.id, { onDelete: "cascade" }).notNull(),
+  status: userCouponStatusEnum("status").default("unused").notNull(),
+  usedAt: timestamp("used_at"),
+  orderId: integer("order_id").references(() => orders.id),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  userIdx: index("user_coupons_user_idx").on(table.userId),
+  couponIdx: index("user_coupons_coupon_idx").on(table.couponId),
+  statusIdx: index("user_coupons_status_idx").on(table.status),
+}));
