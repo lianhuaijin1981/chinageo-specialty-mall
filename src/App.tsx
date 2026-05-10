@@ -13,6 +13,8 @@ import About from './pages/About';
 import SearchPage from './pages/SearchPage';
 import CouponCenter from './pages/CouponCenter';
 import MyCoupons from './pages/MyCoupons';
+import PointsMall from './pages/PointsMall';
+import MyPointsOrders from './pages/MyPointsOrders';
 
 export default function App() {
   return (
@@ -31,6 +33,8 @@ export default function App() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/coupons" element={<CouponCenter />} />
         <Route path="/coupons/my" element={<MyCoupons />} />
+        <Route path="/points-mall" element={<PointsMall />} />
+        <Route path="/points/orders" element={<MyPointsOrders />} />
       </Routes>
     </Layout>
   );

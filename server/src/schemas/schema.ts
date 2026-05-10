@@ -220,3 +220,65 @@ export const userCoupons = pgTable("user_coupons", {
   couponIdx: index("user_coupons_coupon_idx").on(table.couponId),
   statusIdx: index("user_coupons_status_idx").on(table.status),
 }));
+
+// ------- 积分历史记录表 -------
+export const pointsHistory = pgTable("points_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  points: integer("points").notNull(), // 正数为获取，负数为消费
+  type: varchar("type", { length: 20 }).notNull(), // "earn" | "redeem"
+  source: varchar("source", { length: 50 }).notNull(), // "purchase", "signin", "review", "exchange", etc.
+  referenceId: integer("reference_id"), // 关联的订单ID或商品ID
+  description: text("description"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  userIdx: index("points_history_user_idx").on(table.userId),
+  typeIdx: index("points_history_type_idx").on(table.type),
+  createdAtIdx: index("points_history_created_at_idx").on(table.createdAt),
+}));
+
+// ------- 积分兑换商品表 -------
+export const pointsProducts = pgTable("points_products", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  image: text("image"),
+  pointsCost: integer("points_cost").notNull(), // 兑换所需积分
+  stock: integer("stock").default(0).notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(), // "active", "inactive", "out_of_stock"
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  limitPerUser: integer("limit_per_user").default(1), // 每人限购数量
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  statusIdx: index("points_products_status_idx").on(table.status),
+  dateIdx: index("points_products_date_idx").on(table.startDate, table.endDate),
+}));
+
+// ------- 积分兑换订单表 -------
+export const pointsOrders = pgTable("points_orders", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  productId: integer("product_id").references(() => pointsProducts.id, { onDelete: "cascade" }).notNull(),
+  quantity: integer("quantity").default(1).notNull(),
+  totalPoints: integer("total_points").notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // "pending", "completed", "cancelled"
+  shippingAddress: json("shipping_address").$type<{
+    name: string;
+    phone: string;
+    province: string;
+    city: string;
+    district: string;
+    detail: string;
+  }>(),
+  trackingNo: varchar("tracking_no", { length: 100 }),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  userIdx: index("points_orders_user_idx").on(table.userId),
+  statusIdx: index("points_orders_status_idx").on(table.status),
+}));

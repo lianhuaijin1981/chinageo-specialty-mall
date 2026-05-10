@@ -71,6 +71,10 @@ app.route("/api/search", searchRoutes);
 import { default as couponRoutes } from "./routes/coupons";
 app.route("/api/coupons", couponRoutes);
 
+// 积分路由
+import { default as pointsRoutes } from "./routes/points.routes";
+app.route("/api/points", pointsRoutes);
+
 // 404 处理
 app.notFound((c) => {
   return c.json({ error: "Not Found", path: c.req.path }, 404);
