@@ -75,6 +75,10 @@ app.route("/api/coupons", couponRoutes);
 import { default as pointsRoutes } from "./routes/points.routes";
 app.route("/api/points", pointsRoutes);
 
+// 会员路由
+import { default as memberRoutes } from "./routes/member.routes";
+app.route("/api/member", memberRoutes);
+
 // 404 处理
 app.notFound((c) => {
   return c.json({ error: "Not Found", path: c.req.path }, 404);

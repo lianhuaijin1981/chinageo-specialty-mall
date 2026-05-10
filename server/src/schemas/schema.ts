@@ -6,6 +6,7 @@ export const userRoleEnum = pgEnum("user_role", ["user", "admin", "merchant"]);
 export const orderStatusEnum = pgEnum("order_status", ["pending", "paid", "shipped", "delivered", "cancelled", "refunded"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["unpaid", "paying", "paid", "failed", "refunded"]);
 export const paymentMethodEnum = pgEnum("payment_method", ["wechat", "alipay", "bank_transfer"]);
+export const memberLevelEnum = pgEnum("member_level", ["normal", "silver", "gold"]);
 
 // ------- 用户表 -------
 export const users = pgTable("users", {
@@ -22,12 +23,19 @@ export const users = pgTable("users", {
   wechatOpenid: varchar("wechat_openid", { length: 64 }).unique(),
   wechatUnionid: varchar("wechat_unionid", { length: 64 }),
   lastLoginAt: timestamp("last_login_at"),
+  
+  // 会员相关字段
+  memberLevel: memberLevelEnum("member_level").default("normal").notNull(),
+  totalSpent: decimal("total_spent", { precision: 10, scale: 2 }).default("0").notNull(),
+  points: integer("points").default(0).notNull(),
+  
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => ({
   emailIdx: index("users_email_idx").on(table.email),
   phoneIdx: index("users_phone_idx").on(table.phone),
   wechatIdx: index("users_wechat_idx").on(table.wechatOpenid),
+  memberLevelIdx: index("users_member_level_idx").on(table.memberLevel),
 }));
 
 // ------- 用户地址表 -------
