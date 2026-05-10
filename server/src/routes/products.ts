@@ -5,6 +5,7 @@ import { db } from "../db";
 import { products, categories, regions } from "../schemas/schema";
 import { eq, like, desc, asc } from "drizzle-orm";
 import { optionalAuthMiddleware } from "../middleware/auth";
+import { indexProduct, deleteProductIndex } from "../services/search";
 
 const app = new Hono();
 
@@ -89,6 +90,9 @@ app.post("/", zValidator("json", z.object({
       originalPrice: data.originalPrice?.toString(),
     }).returning();
 
+    // 索引到Elasticsearch
+    await indexProduct(product);
+
     return c.json({ success: true, data: product });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 400);
@@ -114,6 +118,9 @@ app.put("/:id", async (c) => {
       return c.json({ success: false, message: "商品不存在" }, 404);
     }
 
+    // 更新Elasticsearch索引
+    await indexProduct(product);
+
     return c.json({ success: true, data: product });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 400);
@@ -128,6 +135,9 @@ app.delete("/:id", async (c) => {
   await db.update(products)
     .set({ isActive: false })
     .where(eq(products.id, id));
+
+  // 从Elasticsearch删除索引
+  await deleteProductIndex(id);
 
   return c.json({ success: true, message: "商品已删除" });
 });

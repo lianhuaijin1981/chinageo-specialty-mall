@@ -10,6 +10,7 @@ import Orders from './pages/Orders';
 import Profile from './pages/Profile';
 import Member from './pages/Member';
 import About from './pages/About';
+import SearchPage from './pages/SearchPage';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/member" element={<Member />} />
         <Route path="/about" element={<About />} />
+        <Route path="/search" element={<SearchPage />} />
       </Routes>
     </Layout>
   );

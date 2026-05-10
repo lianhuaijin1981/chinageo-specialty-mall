@@ -3,6 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import * as authService from "./auth.service";
 import { authMiddleware } from "../middleware/auth";
+import { createRateLimit, rateLimitConfigs } from "../middleware/rateLimit";
 
 const app = new Hono();
 
@@ -17,7 +18,7 @@ const registerSchema = z.object({
   message: "邮箱、手机号或用户名至少提供一个",
 });
 
-app.post("/register", zValidator("json", registerSchema), async (c) => {
+app.post("/register", createRateLimit(rateLimitConfigs.register), zValidator("json", registerSchema), async (c) => {
   try {
     const dto = await c.req.json();
     const result = await authService.register(dto);
@@ -43,7 +44,7 @@ const loginSchema = z.object({
   message: "邮箱、手机号或用户名至少提供一个",
 });
 
-app.post("/login", zValidator("json", loginSchema), async (c) => {
+app.post("/login", createRateLimit(rateLimitConfigs.login), zValidator("json", loginSchema), async (c) => {
   try {
     const dto = await c.req.json();
     const result = await authService.login(dto);

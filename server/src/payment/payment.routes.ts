@@ -3,11 +3,12 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import * as paymentService from "./payment.service";
 import { authMiddleware } from "../middleware/auth";
+import { createRateLimit, rateLimitConfigs } from "../middleware/rateLimit";
 
 const app = new Hono();
 
 // ------- 创建支付 -------
-app.post("/create", authMiddleware, zValidator("json", z.object({
+app.post("/create", authMiddleware, createRateLimit(rateLimitConfigs.payment), zValidator("json", z.object({
   orderId: z.number().int().positive(),
   paymentMethod: z.enum(["wechat", "alipay"]),
 })), async (c) => {

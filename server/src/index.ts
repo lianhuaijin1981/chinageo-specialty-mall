@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import { config } from "dotenv";
 import { db } from "./db";
+import { ipBlacklistMiddleware, createRateLimit, rateLimitConfigs } from "./middleware/rateLimit";
 
 // 加载环境变量
 config({ path: "../.env" });
@@ -11,6 +12,8 @@ config({ path: "../.env" });
 const app = new Hono();
 
 // 中间件
+app.use("*", ipBlacklistMiddleware);
+app.use("*", createRateLimit(rateLimitConfigs.general));
 app.use("*", cors({
   origin: process.env.CLIENT_URL || "http://localhost:5173",
   credentials: true,
@@ -59,6 +62,10 @@ app.route("/api/orders", orderRoutes);
 // 支付路由
 import { paymentRoutes } from "./payment/payment.routes";
 app.route("/api/payments", paymentRoutes);
+
+// 搜索路由
+import { default as searchRoutes } from "./routes/search";
+app.route("/api/search", searchRoutes);
 
 // 404 处理
 app.notFound((c) => {

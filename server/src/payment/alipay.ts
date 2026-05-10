@@ -39,31 +39,19 @@ export async function createAlipayOrder(params: AlipayParams): Promise<AlipayRes
       subject: params.description,
       product_code: "FAST_INSTANT_TRADE_PAY",
       return_url: params.returnUrl || `${process.env.CLIENT_URL}/payment/result`,
-      notify_url: `${process.env.CLIENT_URL}/api/payments/alipay/notify`,
+      notify_url: `${process.env.SERVER_URL}/api/payments/alipay/notify`,
     };
 
-    // TODO: 实际调用支付宝 API
-    console.log("支付宝支付请求（模拟）:", requestData);
+    // 调用支付宝API - 电脑网站支付
+    const result = await alipaySdk.exec(
+      "alipay.trade.page.pay",
+      requestData
+    );
 
-    // 模拟返回支付 URL
-    const payUrl = `${process.env.ALIPAY_GATEWAY}?${new URLSearchParams({
-      out_trade_no: params.orderNo,
-      total_amount: params.amount.toFixed(2),
-      subject: params.description,
-    }).toString()}`;
-
-    // 保存支付记录
-    await db.insert(payments).values({
-      uuid: `pay_${Date.now()}`,
-      orderId: params.orderId,
-      paymentMethod: "alipay",
-      amount: params.amount.toString(),
-      status: "paying",
-    });
-
+    // result是一个URL，直接返回
     return {
       success: true,
-      payUrl,
+      payUrl: result as string,
       tradeNo: `alipay_${Date.now()}`,
     };
   } catch (error: any) {
@@ -85,18 +73,18 @@ export async function createAlipayWapOrder(params: AlipayParams): Promise<Alipay
       product_code: "QUICK_WAP_WAY",
       quit_url: `${process.env.CLIENT_URL}/payment/cancel`,
       return_url: params.returnUrl || `${process.env.CLIENT_URL}/payment/result`,
-      notify_url: `${process.env.CLIENT_URL}/api/payments/alipay/notify`,
+      notify_url: `${process.env.SERVER_URL}/api/payments/alipay/notify`,
     };
 
-    console.log("支付宝手机支付请求（模拟）:", requestData);
+    // 调用支付宝API - 手机网站支付
+    const result = await alipaySdk.exec(
+      "alipay.trade.wap.pay",
+      requestData
+    );
 
     return {
       success: true,
-      payUrl: `${process.env.ALIPAY_GATEWAY}?${new URLSearchParams({
-        out_trade_no: params.orderNo,
-        total_amount: params.amount.toFixed(2),
-        subject: params.description,
-      }).toString()}`,
+      payUrl: result as string,
     };
   } catch (error: any) {
     console.error("支付宝手机支付创建失败:", error);
@@ -110,11 +98,17 @@ export async function createAlipayWapOrder(params: AlipayParams): Promise<Alipay
 // 处理支付宝支付回调
 export async function handleAlipayNotify(notifyData: any): Promise<boolean> {
   try {
-    // TODO: 验证签名
-    // const signVerified = alipaySdk.checkNotifySign(notifyData);
+    // 1. 验证签名
+    const signVerified = alipaySdk.checkNotifySign(notifyData);
+    
+    if (!signVerified) {
+      console.error("支付宝回调签名验证失败");
+      return false;
+    }
 
     const { out_trade_no, trade_no, trade_status } = notifyData;
 
+    // 2. 只有支付成功才更新订单
     if (trade_status === "TRADE_SUCCESS" || trade_status === "TRADE_FINISHED") {
       // 更新订单状态
       await db.update(orders)
@@ -148,13 +142,19 @@ export async function handleAlipayNotify(notifyData: any): Promise<boolean> {
 // 查询支付宝支付订单
 export async function queryAlipayOrder(orderNo: string): Promise<any> {
   try {
-    // TODO: 调用支付宝查询接口
-    console.log("查询支付宝订单:", orderNo);
+    // 调用支付宝查询接口
+    const result = await alipaySdk.exec("alipay.trade.query", {
+      out_trade_no: orderNo,
+    });
+
+    const data = result as any;
+    
     return {
       success: true,
       data: {
-        trade_status: "TRADE_SUCCESS",
-        trade_no: `alipay_txn_${Date.now()}`,
+        trade_status: data.trade_status,
+        trade_no: data.trade_no,
+        total_amount: data.total_amount,
       },
     };
   } catch (error: any) {
@@ -173,10 +173,48 @@ export async function refundAlipayOrder(params: {
   reason: string;
 }): Promise<boolean> {
   try {
-    // TODO: 调用支付宝退款接口
-    console.log("申请支付宝退款:", params);
-    return true;
-  } catch (error) {
+    // 1. 获取支付记录
+    const order = await db.select().from(orders).where(eq(orders.orderNo, params.orderNo)).limit(1);
+    if (order.length === 0) {
+      throw new Error("订单不存在");
+    }
+
+    // 2. 调用支付宝退款接口
+    const refundNo = `refund_${Date.now()}`;
+    const result = await alipaySdk.exec("alipay.trade.refund", {
+      out_trade_no: params.orderNo,
+      refund_amount: (params.refundAmount / 100).toFixed(2),
+      refund_reason: params.reason,
+      out_request_no: refundNo,
+    });
+
+    const data = result as any;
+
+    // 3. 检查退款结果
+    if (data.code === "10000" && data.msg === "Success") {
+      // 更新订单状态
+      await db.update(orders)
+        .set({
+          status: "refunded",
+          paymentStatus: "refunded",
+        })
+        .where(eq(orders.orderNo, params.orderNo));
+
+      // 更新支付记录
+      await db.update(payments)
+        .set({
+          status: "refunded",
+          refundId: data.trade_no,
+          refundedAt: new Date(),
+        })
+        .where(eq(payments.orderId, order[0].id));
+
+      return true;
+    }
+
+    console.error("支付宝退款失败:", data);
+    return false;
+  } catch (error: any) {
     console.error("支付宝退款失败:", error);
     return false;
   }
