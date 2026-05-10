@@ -22,6 +22,8 @@ import GroupBuyingDetail from './pages/GroupBuyingDetail';
 import EnterpriseVerify from './pages/EnterpriseVerify';
 import LiveList from './pages/LiveList';
 import LiveRoom from './pages/LiveRoom';
+import ContentList from './pages/ContentList';
+import ContentDetail from './pages/ContentDetail';
 
 export default function App() {
   return (
@@ -49,6 +51,8 @@ export default function App() {
         <Route path="/enterprise-verify" element={<EnterpriseVerify />} />
         <Route path="/live" element={<LiveList />} />
         <Route path="/live/:id" element={<LiveRoom />} />
+        <Route path="/content" element={<ContentList />} />
+        <Route path="/content/:id" element={<ContentDetail />} />
       </Routes>
     </Layout>
   );

@@ -493,3 +493,56 @@ export const livePromotions = pgTable("live_promotions", {
   productIdx: index("live_promotions_product_idx").on(table.productId),
   statusIdx: index("live_promotions_status_idx").on(table.status),
 }));
+
+// ========== P3功能：内容矩阵 ==========
+
+// ------- 内容分类表 -------
+export const contentCategories = pgTable("content_categories", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  parentId: integer("parent_id").references(() => contentCategories.id),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  slugIdx: index("content_categories_slug_idx").on(table.slug),
+  parentIdx: index("content_categories_parent_idx").on(table.parentId),
+}));
+
+// ------- 内容文章表 -------
+export const contentArticles = pgTable("content_articles", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  title: varchar("title", { length: 200 }).notNull(),
+  content: text("content").notNull(),
+  summary: text("summary"),
+  coverImage: text("cover_image"),
+  categoryId: integer("category_id").references(() => contentCategories.id),
+  authorId: integer("author_id").references(() => users.id).notNull(),
+  status: varchar("status", { length: 20 }).default("published").notNull(), // "draft", "published", "archived"
+  viewCount: integer("view_count").default(0).notNull(),
+  likeCount: integer("like_count").default(0).notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  categoryIdx: index("content_articles_category_idx").on(table.categoryId),
+  authorIdx: index("content_articles_author_idx").on(table.authorId),
+  statusIdx: index("content_articles_status_idx").on(table.status),
+  createdAtIdx: index("content_articles_created_at_idx").on(table.createdAt),
+}));
+
+// ------- 内容评论表 -------
+export const contentComments = pgTable("content_comments", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  articleId: integer("article_id").references(() => contentArticles.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  articleIdx: index("content_comments_article_idx").on(table.articleId),
+  userIdx: index("content_comments_user_idx").on(table.userId),
+  createdAtIdx: index("content_comments_created_at_idx").on(table.createdAt),
+}));

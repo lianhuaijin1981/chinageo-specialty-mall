@@ -72,6 +72,16 @@ function FloatingToolbar() {
               </span>
             </Link>
 
+            <Link
+              to="/content"
+              className="group flex items-center gap-2 bg-white rounded-full px-3 py-2.5 shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              <BookOpen size={18} className="text-green-600" />
+              <span className="text-sm text-[#333333] max-w-0 overflow-hidden group-hover:max-w-[80px] transition-all duration-300 whitespace-nowrap">
+                文化内容
+              </span>
+            </Link>
+
             <button
               onClick={scrollToTop}
               className="group flex items-center gap-2 bg-white rounded-full px-3 py-2.5 shadow-md hover:shadow-lg transition-all duration-300"

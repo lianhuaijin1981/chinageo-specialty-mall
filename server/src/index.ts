@@ -95,6 +95,10 @@ app.route("/api/group-buying", groupBuyingRoutes);
 import { default as liveRoutes } from "./routes/live.routes";
 app.route("/api/live", liveRoutes);
 
+// 内容矩阵路由
+import { default as contentRoutes } from "./routes/content.routes";
+app.route("/api/content", contentRoutes);
+
 // 404 处理
 app.notFound((c) => {
   return c.json({ error: "Not Found", path: c.req.path }, 404);
