@@ -87,6 +87,10 @@ app.route("/api/chat", chatRoutes);
 import { default as seckillRoutes } from "./routes/seckill.routes";
 app.route("/api/seckill", seckillRoutes);
 
+// 企业团购路由
+import { default as groupBuyingRoutes } from "./routes/group-buying.routes";
+app.route("/api/group-buying", groupBuyingRoutes);
+
 // 404 处理
 app.notFound((c) => {
   return c.json({ error: "Not Found", path: c.req.path }, 404);

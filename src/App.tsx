@@ -17,6 +17,9 @@ import PointsMall from './pages/PointsMall';
 import MyPointsOrders from './pages/MyPointsOrders';
 import SeckillList from './pages/SeckillList';
 import SeckillDetail from './pages/SeckillDetail';
+import GroupBuyingList from './pages/GroupBuyingList';
+import GroupBuyingDetail from './pages/GroupBuyingDetail';
+import EnterpriseVerify from './pages/EnterpriseVerify';
 
 export default function App() {
   return (
@@ -39,6 +42,9 @@ export default function App() {
         <Route path="/points/orders" element={<MyPointsOrders />} />
         <Route path="/seckill" element={<SeckillList />} />
         <Route path="/seckill/:id" element={<SeckillDetail />} />
+        <Route path="/group-buying" element={<GroupBuyingList />} />
+        <Route path="/group-buying/:id" element={<GroupBuyingDetail />} />
+        <Route path="/enterprise-verify" element={<EnterpriseVerify />} />
       </Routes>
     </Layout>
   );

@@ -361,3 +361,77 @@ export const seckillOrders = pgTable("seckill_orders", {
   userIdx: index("seckill_orders_user_idx").on(table.userId),
   statusIdx: index("seckill_orders_status_idx").on(table.status),
 }));
+
+// ========== P3功能：企业团购、产地直播、内容矩阵 ==========
+
+// ------- 企业信息表 -------
+export const enterpriseInfo = pgTable("enterprise_info", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  companyName: varchar("company_name", { length: 200 }).notNull(),
+  contactPerson: varchar("contact_person", { length: 50 }).notNull(),
+  contactPhone: varchar("contact_phone", { length: 20 }).notNull(),
+  companyAddress: text("company_address").notNull(),
+  businessLicense: text("business_license"), // 营业执照图片URL
+  taxNumber: varchar("tax_number", { length: 50 }), // 税号
+  invoiceType: varchar("invoice_type", { length: 20 }).default("normal"), // "normal", "special"
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // "pending", "verified", "rejected"
+  rejectionReason: text("rejection_reason"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  userIdx: index("enterprise_user_idx").on(table.userId),
+  statusIdx: index("enterprise_status_idx").on(table.status),
+}));
+
+// ------- 团购活动表 -------
+export const groupBuyingActivities = pgTable("group_buying_activities", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  productId: integer("product_id").references(() => products.id, { onDelete: "cascade" }).notNull(),
+  groupPrice: decimal("group_price", { precision: 10, scale: 2 }).notNull(), // 团购价
+  minGroupSize: integer("min_group_size").default(10).notNull(), // 最低成团数量
+  currentGroupSize: integer("current_group_size").default(0).notNull(), // 当前参团数量
+  maxGroupSize: integer("max_group_size"), // 最高参团数量（可选）
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  status: varchar("status", { length: 20 }).default("upcoming").notNull(), // "upcoming", "active", "ended", "cancelled"
+  enterpriseOnly: boolean("enterprise_only").default(false).notNull(), // 是否仅限企业用户
+  customPackaging: boolean("custom_packaging").default(false).notNull(), // 是否支持定制包装
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  productIdx: index("group_buying_product_idx").on(table.productId),
+  statusIdx: index("group_buying_status_idx").on(table.status),
+  timeIdx: index("group_buying_time_idx").on(table.startTime, table.endTime),
+}));
+
+// ------- 团购订单表 -------
+export const groupBuyingOrders = pgTable("group_buying_orders", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  activityId: integer("activity_id").references(() => groupBuyingActivities.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  enterpriseId: integer("enterprise_id").references(() => enterpriseInfo.id), // 如果是企业团购
+  quantity: integer("quantity").default(1).notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // "pending", "paid", "cancelled", "refunded"
+  invoiceTitle: varchar("invoice_title", { length: 200 }), // 发票抬头
+  invoiceTaxNumber: varchar("invoice_tax_number", { length: 50 }), // 发票税号
+  shippingAddress: json("shipping_address").$type<{
+    name: string;
+    phone: string;
+    province: string;
+    city: string;
+    district: string;
+    detail: string;
+  }>(),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  activityIdx: index("group_buying_orders_activity_idx").on(table.activityId),
+  userIdx: index("group_buying_orders_user_idx").on(table.userId),
+  statusIdx: index("group_buying_orders_status_idx").on(table.status),
+}));
