@@ -92,6 +92,12 @@ export const rateLimitConfigs = {
     max: 3,
     message: '注册次数过多，请1小时后再试',
   },
+  // 秒杀接口：10秒1次（严格限流防刷）
+  seckill: {
+    windowMs: 10 * 1000,
+    max: 1,
+    message: '秒杀请求过于频繁，请稍后再试',
+  },
 };
 
 // IP黑名单中间件

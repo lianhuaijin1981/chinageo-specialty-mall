@@ -322,3 +322,42 @@ export const chatMessages = pgTable("chat_messages", {
   senderIdx: index("chat_messages_sender_idx").on(table.senderId),
   createdAtIdx: index("chat_messages_created_at_idx").on(table.createdAt),
 }));
+
+// ------- 秒杀活动表 -------
+export const seckillActivities = pgTable("seckill_activities", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  productId: integer("product_id").references(() => products.id, { onDelete: "cascade" }).notNull(),
+  seckillPrice: decimal("seckill_price", { precision: 10, scale: 2 }).notNull(), // 秒杀价格
+  totalStock: integer("total_stock").notNull(), // 总库存
+  soldCount: integer("sold_count").default(0).notNull(), // 已售数量
+  startTime: timestamp("start_time").notNull(), // 开始时间
+  endTime: timestamp("end_time").notNull(), // 结束时间
+  status: varchar("status", { length: 20 }).default("upcoming").notNull(), // "upcoming", "active", "ended", "cancelled"
+  maxPerUser: integer("max_per_user").default(1).notNull(), // 每用户限购数量
+  currentStock: integer("current_stock").notNull(), // 当前库存（实时）
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  productIdx: index("seckill_product_idx").on(table.productId),
+  statusIdx: index("seckill_status_idx").on(table.status),
+  timeIdx: index("seckill_time_idx").on(table.startTime, table.endTime),
+}));
+
+// ------- 秒杀订单表 -------
+export const seckillOrders = pgTable("seckill_orders", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  activityId: integer("activity_id").references(() => seckillActivities.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  quantity: integer("quantity").default(1).notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(), // "pending", "paid", "cancelled", "timeout"
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  activityIdx: index("seckill_orders_activity_idx").on(table.activityId),
+  userIdx: index("seckill_orders_user_idx").on(table.userId),
+  statusIdx: index("seckill_orders_status_idx").on(table.status),
+}));

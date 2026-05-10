@@ -83,6 +83,10 @@ app.route("/api/member", memberRoutes);
 import { default as chatRoutes } from "./routes/chat.routes";
 app.route("/api/chat", chatRoutes);
 
+// 秒杀路由
+import { default as seckillRoutes } from "./routes/seckill.routes";
+app.route("/api/seckill", seckillRoutes);
+
 // 404 处理
 app.notFound((c) => {
   return c.json({ error: "Not Found", path: c.req.path }, 404);
