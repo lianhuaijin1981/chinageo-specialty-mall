@@ -140,14 +140,21 @@ npm run dev
 4. ✅ **身份验证系统** - 实现注册、登录、JWT 认证、微信登录
 5. ✅ **支付系统集成** - 集成微信支付和支付宝 SDK（框架已搭建，待接入实际 API）
 
-🟠 **待完成（P1）**：
+🟠 **P1 问题修复进度**：
 
-- [ ] 添加单元测试和集成测试
-- [ ] 配置 CI/CD 流水线
-- [ ] 添加 Docker 支持
+✅ **已完成**：
+
+1. ✅ **添加测试框架** - 配置 Vitest + Testing Library，编写单元测试用例（6个测试全部通过）
+2. ✅ **配置 CI/CD 流水线** - 创建 GitHub Actions 工作流（测试、构建、安全扫描）
+3. ✅ **添加 Docker 支持** - 创建前端/后端 Dockerfile + docker-compose.yml
+
+🟡 **待完成（P1 剩余）**：
+
 - [ ] 实现微信支付/支付宝支付的实际 API 调用
 - [ ] 添加商品搜索（ElasticSearch）
 - [ ] 添加限流、防刷机制
+- [ ] 添加 E2E 测试（Playwright/Cypress）
+- [ ] 添加性能监控（Sentry/LogRocket）
 
 ## 📊 数据库 Schema
 
