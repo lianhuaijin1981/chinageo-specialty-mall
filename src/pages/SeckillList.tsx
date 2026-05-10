@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Zap, Clock, ChevronRight, AlertCircle, CheckCircle, 
-  ShoppingCart, Timer, TrendingUp 
-} from "lucide-react";
-import api from "../services/api";
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Zap, Clock, ChevronRight, AlertCircle, CheckCircle } from 'lucide-react';
+import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 interface SeckillActivity {
   id: number;
@@ -22,275 +20,362 @@ interface SeckillActivity {
   productName: string;
   productImage: string[];
   originalPrice: string;
-  productSlug: string;
 }
 
-const SeckillList: React.FC = () => {
+export default function SeckillList() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"active" | "upcoming">("active");
-  const [activities, setActivities] = useState<SeckillActivity[]>([]);
+  const { isAuthenticated } = useAuth();
+  const [activeActivities, setActiveActivities] = useState<SeckillActivity[]>([]);
+  const [upcomingActivities, setUpcomingActivities] = useState<SeckillActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [now, setNow] = useState(Date.now());
+  const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
-  // 每秒更新当前时间（用于倒计时）
+  // 倒计时更新
   useEffect(() => {
     const timer = setInterval(() => {
-      setNow(Date.now());
+      setCurrentTime(Date.now());
     }, 1000);
 
     return () => clearInterval(timer);
   }, []);
 
-  // 获取秒杀活动列表
-  useEffect(() => {
-    fetchActivities();
-  }, [activeTab]);
-
-  const fetchActivities = async () => {
-    setLoading(true);
-    setError("");
-
+  // 获取数据
+  const fetchData = useCallback(async () => {
     try {
-      const endpoint = activeTab === "active" ? "/api/seckill/active" : "/api/seckill/upcoming";
-      const response = await api.get(endpoint);
+      setLoading(true);
+      setError(null);
 
-      if (response.data.success) {
-        setActivities(response.data.data);
-      } else {
-        setError(response.data.error || "获取秒杀活动失败");
+      const [activeRes, upcomingRes] = await Promise.all([
+        api.get('/seckill/activities/active'),
+        api.get('/seckill/activities/upcoming'),
+      ]);
+
+      if (activeRes.data.success) {
+        setActiveActivities(activeRes.data.data);
+      }
+
+      if (upcomingRes.data.success) {
+        setUpcomingActivities(upcomingRes.data.data);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || "网络错误，请稍后重试");
+      setError(err.response?.data?.error || '获取秒杀活动失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // 计算倒计时
-  const getCountdown = (targetTime: string) => {
-    const diff = new Date(targetTime).getTime() - now;
-
+  const getCountdown = (startTime: string) => {
+    const diff = new Date(startTime).getTime() - currentTime;
     if (diff <= 0) return null;
 
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-    return { hours, minutes, seconds, diff };
+    return { hours, minutes, seconds };
   };
 
-  // 计算进度百分比
-  const getProgress = (sold: number, total: number) => {
-    if (total === 0) return 100;
-    return Math.round((sold / total) * 100);
+  // 计算进度
+  const getProgress = (activity: SeckillActivity) => {
+    if (activity.totalStock === 0) return 0;
+    return Math.round((activity.soldCount / activity.totalStock) * 100);
   };
 
-  // 跳转到详情页
-  const handleActivityClick = (activity: SeckillActivity) => {
-    navigate(`/seckill/${activity.id}`);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F5F2EB' }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#2E7D5E' }} />
+          <p style={{ color: '#666666' }}>加载中...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-red-600 to-orange-600 text-white py-8 px-4">
-        <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen" style={{ backgroundColor: '#F5F2EB' }}>
+      {/* 页面标题区 */}
+      <section className="pt-24 pb-12 px-4" style={{ backgroundColor: '#2E7D5E' }}>
+        <div className="max-w-6xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 mb-2"
+            transition={{ duration: 0.6 }}
           >
-            <Zap className="w-8 h-8" />
-            <h1 className="text-3xl font-bold">限时秒杀</h1>
-          </motion.div>
-          <p className="text-red-100 text-sm">超值特惠 · 限时抢购 · 先到先得</p>
-        </div>
-      </div>
-
-      {/* Tab切换 */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        <div className="flex gap-4 mb-6">
-          <button
-            onClick={() => setActiveTab("active")}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-              activeTab === "active"
-                ? "bg-red-600 text-white shadow-lg shadow-red-600/30"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <Zap className="w-4 h-4 inline mr-2" />
-            进行中
-          </button>
-          <button
-            onClick={() => setActiveTab("upcoming")}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-              activeTab === "upcoming"
-                ? "bg-orange-600 text-white shadow-lg shadow-orange-600/30"
-                : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-            }`}
-          >
-            <Clock className="w-4 h-4 inline mr-2" />
-            即将开始
-          </button>
-        </div>
-
-        {/* 错误提示 */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl mb-6 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            {error}
-          </div>
-        )}
-
-        {/* Loading */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl h-80 animate-pulse" />
-            ))}
-          </div>
-        ) : activities.length === 0 ? (
-          <div className="text-center py-20">
-            <Timer className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">
-              {activeTab === "active" ? "暂无进行中的秒杀活动" : "暂无即将开始的秒杀活动"}
+            <Zap size={48} className="mx-auto mb-4 text-white" />
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-white mb-2">
+              限时秒杀
+            </h1>
+            <p className="text-white/80 text-sm md:text-base">
+              精选地理标志产品，超值秒杀价，先到先得！
             </p>
-          </div>
-        ) : (
-          <AnimatePresence mode="wait">
+          </motion.div>
+        </div>
+      </section>
+
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* 错误提示 */}
+        <AnimatePresence>
+          {error && (
             <motion.div
-              key={activeTab}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-6 p-4 rounded-xl flex items-center gap-3"
+              style={{ backgroundColor: '#FEE2E2', color: '#991B1B' }}
             >
-              {activities.map((activity, index) => {
-                const countdown = activeTab === "upcoming" ? getCountdown(activity.startTime) : null;
-                const isEnding = activeTab === "active" && getCountdown(activity.endTime);
-                const progress = getProgress(activity.soldCount, activity.totalStock);
+              <AlertCircle size={20} />
+              <span>{error}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 进行中的秒杀 */}
+        {activeActivities.length > 0 && (
+          <section className="mb-12">
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="mb-6"
+            >
+              <h2 className="text-2xl font-serif font-semibold mb-2" style={{ color: '#333333' }}>
+                进行中的秒杀
+              </h2>
+              <p style={{ color: '#666666' }}>手快有，手慢无！</p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {activeActivities.map((activity, index) => {
+                const progress = getProgress(activity);
+                const isLowStock = activity.currentStock < 10;
 
                 return (
                   <motion.div
                     key={activity.id}
                     initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    onClick={() => handleActivityClick(activity)}
-                    className="bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-300 border border-gray-100 group"
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    onClick={() => navigate(`/seckill/${activity.id}`)}
+                    className="bg-white rounded-2xl overflow-hidden cursor-pointer group"
+                    style={{ border: '1px solid rgba(200, 182, 166, 0.3)' }}
                   >
-                    {/* 商品图片 */}
-                    <div className="relative h-48 bg-gradient-to-br from-red-100 to-orange-100 overflow-hidden">
-                      {activity.productImage && activity.productImage[0] ? (
-                        <img
-                          src={activity.productImage[0]}
-                          alt={activity.productName}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ShoppingCart className="w-16 h-16 text-red-300" />
-                        </div>
-                      )}
-                      
-                      {/* 折扣标签 */}
-                      {activity.originalPrice && (
-                        <div className="absolute top-3 left-3 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
-                          {Math.round((parseFloat(activity.seckillPrice) / parseFloat(activity.originalPrice)) * 10) / 10}折
-                        </div>
-                      )}
-
-                      {/* 即将开始倒计时 */}
-                      {countdown && (
-                        <div className="absolute bottom-3 left-3 right-3 bg-black/70 text-white text-center py-2 rounded-lg">
-                          <p className="text-xs mb-1">即将开始</p>
-                          <div className="flex justify-center gap-1">
-                            <span className="bg-white text-red-600 px-2 py-1 rounded font-mono font-bold text-sm">
-                              {String(countdown.hours).padStart(2, '0')}
-                            </span>
-                            <span className="text-white">:</span>
-                            <span className="bg-white text-red-600 px-2 py-1 rounded font-mono font-bold text-sm">
-                              {String(countdown.minutes).padStart(2, '0')}
-                            </span>
-                            <span className="text-white">:</span>
-                            <span className="bg-white text-red-600 px-2 py-1 rounded font-mono font-bold text-sm">
-                              {String(countdown.seconds).padStart(2, '0')}
-                            </span>
+                    {/* 产品图片 */}
+                    <div className="relative aspect-square overflow-hidden">
+                      <img
+                        src={activity.productImage?.[0] || '/product-placeholder.jpg'}
+                        alt={activity.productName}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {/* 秒杀标签 */}
+                      <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-white"
+                        style={{ backgroundColor: '#D43C33' }}
+                      >
+                        <Zap size={12} className="inline mr-1" />
+                        秒杀
+                      </div>
+                      {/* 进度条 */}
+                      <div className="absolute bottom-0 left-0 right-0 h-8 bg-black/50 flex items-center px-3">
+                        <div className="flex-1 mr-3">
+                          <div className="w-full h-2 bg-white/30 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${progress}%`,
+                                backgroundColor: progress >= 80 ? '#D43C33' : '#F59E0B',
+                              }}
+                            />
                           </div>
                         </div>
-                      )}
+                        <span className="text-xs text-white font-medium">
+                          {progress}%
+                        </span>
+                      </div>
                     </div>
 
-                    {/* 商品信息 */}
+                    {/* 产品信息 */}
                     <div className="p-4">
-                      <h3 className="font-semibold text-gray-800 mb-2 line-clamp-2 group-hover:text-red-600 transition-colors">
+                      <h3 className="font-serif text-lg font-semibold mb-2 line-clamp-2"
+                        style={{ color: '#333333' }}
+                      >
                         {activity.productName}
                       </h3>
 
                       {/* 价格 */}
                       <div className="flex items-baseline gap-2 mb-3">
-                        <span className="text-2xl font-bold text-red-600">
+                        <span className="text-2xl font-bold" style={{ color: '#D43C33', fontFamily: 'Inter, sans-serif' }}>
                           ¥{parseFloat(activity.seckillPrice).toFixed(2)}
                         </span>
-                        {activity.originalPrice && (
-                          <span className="text-sm text-gray-400 line-through">
-                            ¥{parseFloat(activity.originalPrice).toFixed(2)}
+                        <span className="text-sm line-through" style={{ color: '#999999', fontFamily: 'Inter, sans-serif' }}>
+                          ¥{parseFloat(activity.originalPrice).toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* 库存状态 */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs" style={{ color: '#666666' }}>
+                          已售 {activity.soldCount}
+                        </span>
+                        {isLowStock ? (
+                          <span className="text-xs font-medium px-2 py-1 rounded-full"
+                            style={{ backgroundColor: '#FEE2E2', color: '#D43C33' }}
+                          >
+                            仅剩 {activity.currentStock} 件
+                          </span>
+                        ) : (
+                          <span className="text-xs" style={{ color: '#666666' }}>
+                            剩余 {activity.currentStock} 件
                           </span>
                         )}
                       </div>
 
-                      {/* 进度条 */}
-                      <div className="mb-3">
-                        <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>已售{soldCount(activity)}件</span>
-                          <span>仅剩{activity.currentStock}件</span>
-                        </div>
-                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all duration-500"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* 倒计时/状态 */}
-                      {isEnding && (
-                        <div className="flex items-center gap-1 text-xs text-orange-600">
-                          <Timer className="w-3 h-3" />
-                          <span>
-                            距结束 {formatCountdown(isEnding)}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="mt-3 flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <TrendingUp className="w-3 h-3" />
-                          <span>限购{activity.maxPerUser}件</span>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-red-600 transition-colors" />
-                      </div>
+                      {/* 立即抢购按钮 */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isAuthenticated) {
+                            navigate('/login');
+                            return;
+                          }
+                          navigate(`/seckill/${activity.id}`);
+                        }}
+                        className="w-full mt-4 py-2.5 rounded-full text-sm font-medium text-white transition-all duration-200 hover:shadow-lg active:scale-95"
+                        style={{ backgroundColor: '#D43C33' }}
+                      >
+                        立即抢购
+                      </button>
                     </div>
                   </motion.div>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {/* 即将开始的秒杀 */}
+        {upcomingActivities.length > 0 && (
+          <section>
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="mb-6"
+            >
+              <h2 className="text-2xl font-serif font-semibold mb-2" style={{ color: '#333333' }}>
+                即将开始
+              </h2>
+              <p style={{ color: '#666666' }}>提前关注，开抢不错过</p>
             </motion.div>
-          </AnimatePresence>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {upcomingActivities.map((activity, index) => {
+                const countdown = getCountdown(activity.startTime);
+
+                return (
+                  <motion.div
+                    key={activity.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="bg-white rounded-2xl overflow-hidden"
+                    style={{ border: '1px solid rgba(200, 182, 166, 0.3)' }}
+                  >
+                    <div className="relative aspect-square overflow-hidden opacity-60">
+                      <img
+                        src={activity.productImage?.[0] || '/product-placeholder.jpg'}
+                        alt={activity.productName}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <Clock size={32} className="mx-auto mb-2" />
+                          <p className="text-sm font-medium">即将开始</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4">
+                      <h3 className="font-serif text-lg font-semibold mb-2 line-clamp-2"
+                        style={{ color: '#333333' }}
+                      >
+                        {activity.productName}
+                      </h3>
+
+                      <div className="flex items-baseline gap-2 mb-3">
+                        <span className="text-2xl font-bold" style={{ color: '#D43C33', fontFamily: 'Inter, sans-serif' }}>
+                          ¥{parseFloat(activity.seckillPrice).toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* 倒计时 */}
+                      {countdown && (
+                        <div className="flex items-center gap-2 mb-4">
+                          <Clock size={16} style={{ color: '#2E7D5E' }} />
+                          <div className="flex items-center gap-1">
+                            <span className="px-2 py-1 rounded bg-gray-100 text-sm font-mono font-bold"
+                              style={{ color: '#333333' }}
+                            >
+                              {String(countdown.hours).padStart(2, '0')}
+                            </span>
+                            <span style={{ color: '#666666' }}>:</span>
+                            <span className="px-2 py-1 rounded bg-gray-100 text-sm font-mono font-bold"
+                              style={{ color: '#333333' }}
+                            >
+                              {String(countdown.minutes).padStart(2, '0')}
+                            </span>
+                            <span style={{ color: '#666666' }}>:</span>
+                            <span className="px-2 py-1 rounded bg-gray-100 text-sm font-mono font-bold"
+                              style={{ color: '#333333' }}
+                            >
+                              {String(countdown.seconds).padStart(2, '0')}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => navigate(`/seckill/${activity.id}`)}
+                        className="w-full py-2.5 rounded-full text-sm font-medium transition-all duration-200"
+                        style={{ border: '1px solid #2E7D5E', color: '#2E7D5E' }}
+                      >
+                        提醒我
+                      </button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 空状态 */}
+        {!loading && activeActivities.length === 0 && upcomingActivities.length === 0 && (
+          <div className="text-center py-20">
+            <Zap size={64} className="mx-auto mb-4" style={{ color: '#C8B6A6' }} />
+            <h3 className="text-xl font-serif font-semibold mb-2" style={{ color: '#333333' }}>
+              暂无秒杀活动
+            </h3>
+            <p className="mb-6" style={{ color: '#666666' }}>
+              关注我们，第一时间获取秒杀信息
+            </p>
+            <button
+              onClick={() => navigate('/')}
+              className="px-6 py-2.5 rounded-full text-sm font-medium text-white"
+              style={{ backgroundColor: '#2E7D5E' }}
+            >
+              去逛逛
+            </button>
+          </div>
         )}
       </div>
     </div>
   );
-};
-
-// 辅助函数
-function soldCount(activity: SeckillActivity): number {
-  return activity.soldCount || 0;
 }
-
-function formatCountdown(countdown: { hours: number; minutes: number; seconds: number }): string {
-  const { hours, minutes, seconds } = countdown;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
-
-export default SeckillList;
