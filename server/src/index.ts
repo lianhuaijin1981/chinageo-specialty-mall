@@ -91,6 +91,10 @@ app.route("/api/seckill", seckillRoutes);
 import { default as groupBuyingRoutes } from "./routes/group-buying.routes";
 app.route("/api/group-buying", groupBuyingRoutes);
 
+// 产地直播路由
+import { default as liveRoutes } from "./routes/live.routes";
+app.route("/api/live", liveRoutes);
+
 // 404 处理
 app.notFound((c) => {
   return c.json({ error: "Not Found", path: c.req.path }, 404);

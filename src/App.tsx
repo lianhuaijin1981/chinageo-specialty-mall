@@ -20,6 +20,8 @@ import SeckillDetail from './pages/SeckillDetail';
 import GroupBuyingList from './pages/GroupBuyingList';
 import GroupBuyingDetail from './pages/GroupBuyingDetail';
 import EnterpriseVerify from './pages/EnterpriseVerify';
+import LiveList from './pages/LiveList';
+import LiveRoom from './pages/LiveRoom';
 
 export default function App() {
   return (
@@ -45,6 +47,8 @@ export default function App() {
         <Route path="/group-buying" element={<GroupBuyingList />} />
         <Route path="/group-buying/:id" element={<GroupBuyingDetail />} />
         <Route path="/enterprise-verify" element={<EnterpriseVerify />} />
+        <Route path="/live" element={<LiveList />} />
+        <Route path="/live/:id" element={<LiveRoom />} />
       </Routes>
     </Layout>
   );

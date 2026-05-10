@@ -435,3 +435,61 @@ export const groupBuyingOrders = pgTable("group_buying_orders", {
   userIdx: index("group_buying_orders_user_idx").on(table.userId),
   statusIdx: index("group_buying_orders_status_idx").on(table.status),
 }));
+
+// ========== P3功能：产地直播 ==========
+
+// ------- 直播间表 -------
+export const liveStreams = pgTable("live_streams", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  title: varchar("title", { length: 200 }).notNull(),
+  description: text("description"),
+  productId: integer("product_id").references(() => products.id), // 关联主推商品
+  streamerId: integer("streamer_id").references(() => users.id).notNull(), // 主播（管理员）
+  streamUrl: text("stream_url"), // m3u8直播流地址
+  thumbnail: text("thumbnail"), // 直播间封面
+  status: varchar("status", { length: 20 }).default("upcoming").notNull(), // "upcoming", "live", "ended", "cancelled"
+  startTime: timestamp("start_time"),
+  endTime: timestamp("end_time"),
+  viewerCount: integer("viewer_count").default(0).notNull(), // 观看人数
+  likeCount: integer("like_count").default(0).notNull(), // 点赞数
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  streamerIdx: index("live_streams_streamer_idx").on(table.streamerId),
+  statusIdx: index("live_streams_status_idx").on(table.status),
+  timeIdx: index("live_streams_time_idx").on(table.startTime, table.endTime),
+}));
+
+// ------- 直播聊天消息表 -------
+export const liveMessages = pgTable("live_messages", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  liveId: integer("live_id").references(() => liveStreams.id, { onDelete: "cascade" }).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  message: text("message").notNull(),
+  messageType: varchar("message_type", { length: 20 }).default("text").notNull(), // "text", "like", "gift", "system"
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  liveIdx: index("live_messages_live_idx").on(table.liveId),
+  userIdx: index("live_messages_user_idx").on(table.userId),
+  createdAtIdx: index("live_messages_created_at_idx").on(table.createdAt),
+}));
+
+// ------- 直播促销表 -------
+export const livePromotions = pgTable("live_promotions", {
+  id: serial("id").primaryKey(),
+  uuid: varchar("uuid", { length: 32 }).notNull().unique(),
+  liveId: integer("live_id").references(() => liveStreams.id, { onDelete: "cascade" }).notNull(),
+  productId: integer("product_id").references(() => products.id).notNull(),
+  promotionPrice: decimal("promotion_price", { precision: 10, scale: 2 }).notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time").notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(), // "active", "ended"
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+}, (table) => ({
+  liveIdx: index("live_promotions_live_idx").on(table.liveId),
+  productIdx: index("live_promotions_product_idx").on(table.productId),
+  statusIdx: index("live_promotions_status_idx").on(table.status),
+}));
