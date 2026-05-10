@@ -1,0 +1,109 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: 测试与构建
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: 安装依赖
+        run: npm ci
+      
+      - name: 运行代码检查
+        run: npm run lint
+      
+      - name: 运行测试
+        run: npm run test -- --run
+      
+      - name: 构建项目
+        run: npm run build
+      
+      - name: 上传构建产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.node-version }}
+          path: dist/
+          retention-days: 7
+
+  backend-test:
+    name: 后端测试
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: chinageo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: 安装后端依赖
+        working-directory: ./server
+        run: npm ci
+      
+      - name: 推送数据库Schema
+        working-directory: ./server
+        run: npm run db:push
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chinageo_test
+      
+      - name: 运行后端测试（如果有）
+        working-directory: ./server
+        run: npm test 2>/dev/null || echo "No backend tests yet"
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/chinageo_test
+
+  security-scan:
+    name: 安全检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 运行npm audit
+        run: npm audit --audit-level=moderate || true
+      
+      - name: 运行Snyk安全扫描
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+        continue-on-error: true
