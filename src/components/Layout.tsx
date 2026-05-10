@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, ArrowUp } from 'lucide-react';
+import { Search, ArrowUp, Zap } from 'lucide-react';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import ChatWidget from './ChatWidget';
@@ -39,6 +39,16 @@ function FloatingToolbar() {
               <Search size={18} className="text-[#2E7D5E]" />
               <span className="text-sm text-[#333333] max-w-0 overflow-hidden group-hover:max-w-[80px] transition-all duration-300 whitespace-nowrap">
                 溯源查询
+              </span>
+            </Link>
+
+            <Link
+              to="/seckill"
+              className="group flex items-center gap-2 bg-white rounded-full px-3 py-2.5 shadow-md hover:shadow-lg transition-all duration-300"
+            >
+              <Zap size={18} className="text-red-600" />
+              <span className="text-sm text-[#333333] max-w-0 overflow-hidden group-hover:max-w-[80px] transition-all duration-300 whitespace-nowrap">
+                限时秒杀
               </span>
             </Link>
 

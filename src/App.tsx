@@ -15,6 +15,8 @@ import CouponCenter from './pages/CouponCenter';
 import MyCoupons from './pages/MyCoupons';
 import PointsMall from './pages/PointsMall';
 import MyPointsOrders from './pages/MyPointsOrders';
+import SeckillList from './pages/SeckillList';
+import SeckillDetail from './pages/SeckillDetail';
 
 export default function App() {
   return (
@@ -35,6 +37,8 @@ export default function App() {
         <Route path="/coupons/my" element={<MyCoupons />} />
         <Route path="/points-mall" element={<PointsMall />} />
         <Route path="/points/orders" element={<MyPointsOrders />} />
+        <Route path="/seckill" element={<SeckillList />} />
+        <Route path="/seckill/:id" element={<SeckillDetail />} />
       </Routes>
     </Layout>
   );
