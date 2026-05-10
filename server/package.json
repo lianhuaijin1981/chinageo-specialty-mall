@@ -1,0 +1,53 @@
+{
+  "name": "chinageo-mall-server",
+  "version": "0.1.0",
+  "description": "国家地理标识特产商城 - 后端服务",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:push": "drizzle-kit push:pg",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:studio": "drizzle-kit studio",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "hono": "^4.5.0",
+    "@hono/zod-validator": "^0.4.0",
+    "drizzle-orm": "^0.36.0",
+    "pg": "^8.13.0",
+    "zod": "^3.24.0",
+    "bcrypt": "^5.1.1",
+    "@types/bcrypt": "^5.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "@types/jsonwebtoken": "^9.0.7",
+    "dotenv": "^16.4.5",
+    "redis": "^4.7.0",
+    "nanoid": "^5.0.8",
+    "dayjs": "^1.11.13",
+    "wxpay-v3": "^1.0.0",
+    "alipay-sdk": "^3.4.0",
+    "ali-oss": "^6.21.0",
+    "@alicloud/pop-core": "^2.1.1",
+    "nodemailer": "^6.9.16",
+    "cors": "^2.8.5",
+    "@types/cors": "^2.8.17"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "drizzle-kit": "^0.27.0",
+    "eslint": "^9.17.0",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "prettier": "^3.4.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
